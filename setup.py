@@ -7,8 +7,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 ext_modules = [
     Extension(
-        'LatticeForge.closest_index',
-        ['LatticeForge/closest_index.cpp'],
+        'LatticeForge.closest_index_cpp',
+        ['LatticeForge/closest_index_cpp.cpp'],
         include_dirs=[
             pybind11.get_include(), 
             pybind11.get_include(user=True),

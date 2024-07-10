@@ -11,10 +11,10 @@ LatticeForge is a Python library that allows you to create lattice bases, genera
 
 ## Installation
 
-You can install the package using pip:
+You can install the package using pip from the root directory of the repository:
 
 ```
-pip install LatticeForge
+pip install -e .
 ```
 
 

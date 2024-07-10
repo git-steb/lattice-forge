@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.linalg import cholesky
-from .closest_index import closestIndexC
+from .closest_index_cpp import closestIndexC
 
 def closestIndex(R, x=None):
     G2 = R.T
