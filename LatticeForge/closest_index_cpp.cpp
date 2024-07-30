@@ -15,9 +15,8 @@ inline double sgn1(double x) {
     return (x > 0) - (x < 0);
 }
 
-// Template function to print Eigen matrices and maps
-template<typename Derived>
-void printMatrix(const Eigen::DenseBase<Derived>& mat) {
+// Function to print Eigen::MatrixXd
+void printMatrix(const Eigen::MatrixXd& mat) {
     for (int i = 0; i < mat.rows(); ++i) {
         for (int j = 0; j < mat.cols(); ++j) {
             std::cout << mat(i, j) << " ";
@@ -26,9 +25,25 @@ void printMatrix(const Eigen::DenseBase<Derived>& mat) {
     }
 }
 
-// Explicit instantiation for common Eigen types
-template void printMatrix<Eigen::MatrixXd>(const Eigen::DenseBase<Eigen::MatrixXd>&);
-template void printMatrix<Eigen::Map<Eigen::MatrixXd>>(const Eigen::DenseBase<Eigen::Map<Eigen::MatrixXd>>&);
+// Function to print Eigen::Map<Eigen::MatrixXd>
+void printMatrix(const Eigen::Map<Eigen::MatrixXd>& mat) {
+    for (int i = 0; i < mat.rows(); ++i) {
+        for (int j = 0; j < mat.cols(); ++j) {
+            std::cout << mat(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+// Function to print Eigen::Map with specific storage order
+void printMatrix(const Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& mat) {
+    for (int i = 0; i < mat.rows(); ++i) {
+        for (int j = 0; j < mat.cols(); ++j) {
+            std::cout << mat(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
 
 // Overloaded function to print pybind11 numpy arrays
 void printMatrix(const py::array_t<double>& arr) {
@@ -45,9 +60,10 @@ void printMatrix(const py::array_t<double>& arr) {
     }
 }
 
-inline Eigen::MatrixXd selectRows(const Eigen::MatrixXd& m, const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
+// Function to select rows based on a boolean array
+inline MatrixXd selectRows(const MatrixXd& m, const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
     int n = v.count();
-    Eigen::MatrixXd r(n, m.cols());
+    MatrixXd r(n, m.cols());
     int k = 0;
     for (int i = 0; i < v.size(); i++) {
         if (v(i)) {
@@ -102,10 +118,15 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
             } else {
                 if (!compCP || (newdist != 0)) {
                     if (allnn) {
+                        std::cout << "uhat before: " << uhat.rows() << " rows, " << uhat.cols() << " cols" << std::endl;
                         uhat.conservativeResize(uhat.rows() + 1, H_map.cols());
                         uhat.row(uhat.rows() - 1) = u;
+                        std::cout << "uhat after: " << uhat.rows() << " rows, " << uhat.cols() << " cols" << std::endl;
+                        
+                        std::cout << "dhat before: " << dhat.rows() << " rows, " << dhat.cols() << " cols" << std::endl;
                         dhat.conservativeResize(dhat.rows() + 1, 1);
                         dhat(dhat.rows() - 1) = newdist;
+                        std::cout << "dhat after: " << dhat.rows() << " rows, " << dhat.cols() << " cols" << std::endl;
                     } else {
                         uhat = u;
                         k++;
