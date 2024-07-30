@@ -17,7 +17,6 @@ You can install the package using pip from the root directory of the repository:
 pip install -e .
 ```
 
-
 ## Usage
 
 Here's an example of how to use the library:
@@ -35,4 +34,3 @@ print(uhat)
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-

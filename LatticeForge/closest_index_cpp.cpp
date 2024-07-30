@@ -15,6 +15,36 @@ inline double sgn1(double x) {
     return (x > 0) - (x < 0);
 }
 
+// Template function to print Eigen matrices and maps
+template<typename Derived>
+void printMatrix(const Eigen::DenseBase<Derived>& mat) {
+    for (int i = 0; i < mat.rows(); ++i) {
+        for (int j = 0; j < mat.cols(); ++j) {
+            std::cout << mat(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+// Explicit instantiation for common Eigen types
+template void printMatrix<Eigen::MatrixXd>(const Eigen::DenseBase<Eigen::MatrixXd>&);
+template void printMatrix<Eigen::Map<Eigen::MatrixXd>>(const Eigen::DenseBase<Eigen::Map<Eigen::MatrixXd>>&);
+
+// Overloaded function to print pybind11 numpy arrays
+void printMatrix(const py::array_t<double>& arr) {
+    auto buf = arr.request();
+    auto ptr = static_cast<double*>(buf.ptr);
+    int rows = buf.shape[0];
+    int cols = buf.shape[1];
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            std::cout << ptr[i * cols + j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 inline Eigen::MatrixXd selectRows(const Eigen::MatrixXd& m, const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
     int n = v.count();
     Eigen::MatrixXd r(n, m.cols());

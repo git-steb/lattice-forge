@@ -15,7 +15,7 @@ ext_modules = [
             os.path.join(current_dir, 'LatticeForge', 'eigen')
         ],
         language='c++',
-        extra_compile_args=['-std=c++11', '-Wno-int-in-bool-context', '-Wno-c++11-extensions'],
+        extra_compile_args=['-std=c++11', '-Wno-int-in-bool-context', '-Wno-c++11-extensions', '-g'],
         extra_link_args=['-std=c++11']
     ),
 ]
