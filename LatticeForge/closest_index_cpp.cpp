@@ -60,6 +60,14 @@ void printMatrix(const py::array_t<double>& arr) {
     }
 }
 
+// Function to print Eigen::Array<bool, Eigen::Dynamic, 1>
+void printArray(const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
+    for (int i = 0; i < v.size(); ++i) {
+        std::cout << v(i) << " ";
+    }
+    std::cout << std::endl;
+}
+
 // Function to select rows based on a boolean array
 inline MatrixXd selectRows(const MatrixXd& m, const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
     int n = v.count();
@@ -73,14 +81,21 @@ inline MatrixXd selectRows(const MatrixXd& m, const Eigen::Array<bool, Eigen::Dy
     return r;
 }
 
-py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x = py::array_t<double>()) {
+py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x = py::array_t<double>(), bool allnn = true, double epsilon = -1.0) {
     py::buffer_info H_buf = H.request();
     auto H_ptr = static_cast<double*>(H_buf.ptr);
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> H_map(H_ptr, H_buf.shape[0], H_buf.shape[1]);
 
     int n = H_map.rows();
-    bool allnn = true;
-    double epsilon = 0;
+
+    // Set epsilon based on the value of allnn
+    if (epsilon == -1.0) {
+        if (allnn) {
+            epsilon = 1e-8;
+        } else {
+            epsilon = 0.0;
+        }
+    }
 
     double bestdist = std::numeric_limits<double>::infinity();
     int k = n;
@@ -94,7 +109,7 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
         Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> x_map(x_ptr, 1, H_buf.shape[1]);
         e.row(k - 1) = x_map * H_map;
     } else {
-        compCP = true;
+        compCP = true; // second arg may be present, but empty
     }
 
     MatrixXd u = MatrixXd::Zero(1, n);
@@ -107,27 +122,26 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
 
     while (true) {
         double newdist = dist(k - 1) + y * y;
-        if ((newdist - bestdist) < (epsilon * bestdist)) {
+        std::cout << "newdist: " << newdist << ", bestdist: " << bestdist << ", epsilon: " << epsilon << std::endl;
+        if (bestdist == std::numeric_limits<double>::infinity() || 
+                (newdist - bestdist) < (epsilon * bestdist)) 
+            {
             if (k != 1) {
                 dist(k - 1) = newdist;
+                e.block(k - 2, 0, 1, k - 1) = e.block(k - 1, 0, 1, k - 1) - y * H_map.block(k - 1, 0, 1, k - 1);
                 k--;
-                e.row(k - 1) = e.row(k - 1) - u(k) * H_map.col(k - 1).transpose();
-                u(k - 1) = round(e(k - 1, k - 1));
-                y = (e(k - 1, k - 1) - u(k - 1)) / H_map(k - 1, k - 1);
+                double ekk = e(k - 1, k - 1);
+                u(k - 1) = round(ekk); // closest layer
+                y = (ekk - u(k - 1)) / H_map(k - 1, k - 1);
                 step(k - 1) = sgn1(y);
             } else {
                 if (!compCP || (newdist != 0)) {
                     if (allnn) {
-                        std::cout << "uhat before: " << uhat.rows() << " rows, " << uhat.cols() << " cols" << std::endl;
                         uhat.conservativeResize(uhat.rows() + 1, H_map.cols());
                         uhat.row(uhat.rows() - 1) = u;
-                        std::cout << "uhat after: " << uhat.rows() << " rows, " << uhat.cols() << " cols" << std::endl;
-                        
-                        std::cout << "dhat before: " << dhat.rows() << " rows, " << dhat.cols() << " cols" << std::endl;
                         dhat.conservativeResize(dhat.rows() + 1, 1);
                         dhat(dhat.rows() - 1) = newdist;
-                        std::cout << "dhat after: " << dhat.rows() << " rows, " << dhat.cols() << " cols" << std::endl;
-                    } else {
+                    } else { // only keep closest point
                         uhat = u;
                         k++;
                     }
@@ -144,12 +158,7 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
                     Eigen::Array<bool, Eigen::Dynamic, 1> dsel = dhat.array() < double(1 + epsilon);
                     uhat = selectRows(uhat, dsel);
                 }
-                if (uhat.size() == 0) {
-                    std::cerr << "Error: uhat is STILL empty." << std::endl;
-                    std::cerr << "H_map:" << std::endl << H_map << std::endl;
-                    std::cerr << "e:" << std::endl << e << std::endl;
-                    std::cerr << "dist:" << std::endl << dist << std::endl;
-                }
+                std::cout << "uhat rows: " << uhat.rows() << ", uhat cols: " << uhat.cols() << std::endl;
                 return py::array_t<double>({uhat.rows(), uhat.cols()}, uhat.data());
             } else {
                 k++;
@@ -162,5 +171,5 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
 }
 
 PYBIND11_MODULE(closest_index_cpp, m) {
-    m.def("closestIndexC", &closestIndexC, py::arg("H"), py::arg("x") = py::array_t<double>());
+    m.def("closestIndexC", &closestIndexC, py::arg("H"), py::arg("x") = py::array_t<double>(), py::arg("allnn") = true, py::arg("epsilon") = -1.0);
 }

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import cholesky
 from .closest_index_cpp import closestIndexC
 
-def closestIndex(R, x=None):
+def closestIndex(R, x=None, allnn=True, epsilon=1e-8):
     G2 = R.T
     U = cholesky(np.dot(G2, G2.T), lower=True)
     flipU = np.diag((np.diag(U) >= 0) * 2 - 1)
@@ -13,8 +13,8 @@ def closestIndex(R, x=None):
     if x is not None:
         x = x.flatten()  # Ensure x is 1-dimensional
         x3 = np.dot(x, Q.T)
-        uhat = closestIndexC(H3, x3)
+        uhat = closestIndexC(H3, x3, allnn, epsilon)
     else:
-        uhat = closestIndexC(H3)
+        uhat = closestIndexC(H3, allnn=allnn, epsilon=epsilon)
         
     return uhat
