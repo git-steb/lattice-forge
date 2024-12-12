@@ -16,7 +16,8 @@ inline double sgn1(double x) {
 }
 
 // Function to print Eigen::MatrixXd
-void printMatrix(const Eigen::MatrixXd& mat) {
+void printMatrix(const Eigen::MatrixXd& mat, const std::string& name) {
+    std::cout << "Matrix: " << name << std::endl;
     for (int i = 0; i < mat.rows(); ++i) {
         for (int j = 0; j < mat.cols(); ++j) {
             std::cout << mat(i, j) << " ";
@@ -26,7 +27,8 @@ void printMatrix(const Eigen::MatrixXd& mat) {
 }
 
 // Function to print Eigen::Map<Eigen::MatrixXd>
-void printMatrix(const Eigen::Map<Eigen::MatrixXd>& mat) {
+void printMatrix(const Eigen::Map<Eigen::MatrixXd>& mat, const std::string& name) {
+    std::cout << "Matrix: " << name << std::endl;
     for (int i = 0; i < mat.rows(); ++i) {
         for (int j = 0; j < mat.cols(); ++j) {
             std::cout << mat(i, j) << " ";
@@ -36,7 +38,8 @@ void printMatrix(const Eigen::Map<Eigen::MatrixXd>& mat) {
 }
 
 // Function to print Eigen::Map with specific storage order
-void printMatrix(const Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& mat) {
+void printMatrix(const Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& mat, const std::string& name) {
+    std::cout << "Matrix: " << name << std::endl;
     for (int i = 0; i < mat.rows(); ++i) {
         for (int j = 0; j < mat.cols(); ++j) {
             std::cout << mat(i, j) << " ";
@@ -46,12 +49,13 @@ void printMatrix(const Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::D
 }
 
 // Overloaded function to print pybind11 numpy arrays
-void printMatrix(const py::array_t<double>& arr) {
+void printMatrix(const py::array_t<double>& arr, const std::string& name) {
     auto buf = arr.request();
     auto ptr = static_cast<double*>(buf.ptr);
     int rows = buf.shape[0];
     int cols = buf.shape[1];
 
+    std::cout << "Matrix: " << name << std::endl;
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             std::cout << ptr[i * cols + j] << " ";
@@ -61,7 +65,8 @@ void printMatrix(const py::array_t<double>& arr) {
 }
 
 // Function to print Eigen::Array<bool, Eigen::Dynamic, 1>
-void printArray(const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
+void printArray(const Eigen::Array<bool, Eigen::Dynamic, 1>& v, const std::string& name) {
+    std::cout << "Array: " << name << std::endl;
     for (int i = 0; i < v.size(); ++i) {
         std::cout << v(i) << " ";
     }
@@ -114,6 +119,7 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
 
     MatrixXd u = MatrixXd::Zero(1, n);
     u(k - 1) = round(e(k - 1, k - 1));
+
     MatrixXd uhat(0, H_map.cols()), dhat(0, 1);
 
     double y = (e(k - 1, k - 1) - u(k - 1)) / H_map(k - 1, k - 1);
@@ -122,14 +128,12 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
 
     while (true) {
         double newdist = dist(k - 1) + y * y;
-        std::cout << "newdist: " << newdist << ", bestdist: " << bestdist << ", epsilon: " << epsilon << std::endl;
-        if (bestdist == std::numeric_limits<double>::infinity() || 
-                (newdist - bestdist) < (epsilon * bestdist)) 
-            {
+
+        if ((newdist - bestdist) < (epsilon * bestdist)) {
             if (k != 1) {
-                dist(k - 1) = newdist;
                 e.block(k - 2, 0, 1, k - 1) = e.block(k - 1, 0, 1, k - 1) - y * H_map.block(k - 1, 0, 1, k - 1);
                 k--;
+                dist(k - 1) = newdist;
                 double ekk = e(k - 1, k - 1);
                 u(k - 1) = round(ekk); // closest layer
                 y = (ekk - u(k - 1)) / H_map(k - 1, k - 1);
@@ -158,8 +162,12 @@ py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x =
                     Eigen::Array<bool, Eigen::Dynamic, 1> dsel = dhat.array() < double(1 + epsilon);
                     uhat = selectRows(uhat, dsel);
                 }
-                std::cout << "uhat rows: " << uhat.rows() << ", uhat cols: " << uhat.cols() << std::endl;
-                return py::array_t<double>({uhat.rows(), uhat.cols()}, uhat.data());
+                // Create output matrix
+                py::array_t<double> result({uhat.rows(), uhat.cols()});
+                auto result_buf = result.request();
+                double* result_ptr = static_cast<double*>(result_buf.ptr);
+                Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(result_ptr, uhat.rows(), uhat.cols()) = uhat;
+                return result;
             } else {
                 k++;
                 u(k - 1) = u(k - 1) + step(k - 1);
