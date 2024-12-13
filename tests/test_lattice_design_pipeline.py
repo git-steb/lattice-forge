@@ -2,9 +2,11 @@
 import unittest
 import numpy as np
 from scipy.linalg import companion
+from sympy import sqrt, I, eye
 from scipy.stats import special_ortho_group
 
 from LatticeForge.lattice_design_pipeline import (
+    formJ,
     genfilename,
     verifyK,
     formlattice,
@@ -25,6 +27,7 @@ logging.basicConfig(
         logging.StreamHandler()  # Logs will be output to the console
     ]
 )
+# logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 class TestLatticePipeline(unittest.TestCase):
     
@@ -35,13 +38,51 @@ class TestLatticePipeline(unittest.TestCase):
         filename = genfilename(N=3, detK=4, suffix="test")
         self.assertEqual(filename, "lattices_dim3_det4_test.npy")
 
+class TestFormJ(unittest.TestCase):
+
+    def test_numeric_J_2x2(self):
+        expected = np.array([[1 / np.sqrt(2), 1j / np.sqrt(2)], 
+                             [1 / np.sqrt(2), -1j / np.sqrt(2)]], dtype=complex)
+        result = formJ(2, symbolic=False)
+        np.testing.assert_array_almost_equal(result, expected)
+
+    def test_numeric_J_4x4(self):
+        sqrt2_inv = 1 / np.sqrt(2)
+        expected = np.array([
+            [sqrt2_inv, 1j * sqrt2_inv, 0, 0],
+            [sqrt2_inv, -1j * sqrt2_inv, 0, 0],
+            [0, 0, sqrt2_inv, 1j * sqrt2_inv],
+            [0, 0, sqrt2_inv, -1j * sqrt2_inv]
+        ], dtype=complex)
+        result = formJ(4, symbolic=False)
+        np.testing.assert_array_almost_equal(result, expected)
+
+    def test_symbolic_J_2x2(self):
+        sqrt2 = sqrt(2)
+        expected = np.array([[1 / sqrt2, I / sqrt2], 
+                             [1 / sqrt2, -I / sqrt2]])
+        result = formJ(2, symbolic=True)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_symbolic_J_4x4(self):
+        sqrt2 = sqrt(2)
+        expected = eye(4)
+        expected[0:2, 0:2] = np.array([[1 / sqrt2, I / sqrt2], 
+                                       [1 / sqrt2, -I / sqrt2]])
+        expected[2:4, 2:4] = np.array([[1 / sqrt2, I / sqrt2], 
+                                       [1 / sqrt2, -I / sqrt2]])
+        result = formJ(4, symbolic=True)
+        np.testing.assert_array_equal(result, expected)
+
+class TestLatticePipeline(unittest.TestCase):
+
     def test_verifyK_valid(self):
-        """
-        Test verifyK with a valid subsampling matrix.
-        """
-        K = np.array([[1, 1], [1, 3]])  # det(K) = 2
-        self.assertTrue(verifyK(K, detK=2))
-    
+            """
+            Test verifyK with a valid subsampling matrix.
+            """
+            K = np.array([[1, 1], [1, 3]])  # det(K) = 2
+            self.assertTrue(verifyK(K, detK=2))
+        
     def test_verifyK_invalid(self):
         """
         Test verifyK with an invalid subsampling matrix.
@@ -88,7 +129,8 @@ class TestLatticePipeline(unittest.TestCase):
         self.assertGreaterEqual(len(results), 1, "doall did not return any valid matrices.")
         for K in results:
             self.assertTrue(verifyK(K, detK=2), f"Matrix K={K} failed verification.")
-    
+
+class TestLatticeSampling(unittest.TestCase):    
     def test_high_dimensional_sampling(self):
         """
         Test lattice sampling for dimensions greater than 7 with a random rotation applied.
@@ -201,6 +243,7 @@ class TestLatticePipeline(unittest.TestCase):
         if points.shape[0] == 0:
             logging.debug("No points generated. Check bounds and constraints.")
 
+class TestVerifyK(unittest.TestCase):
     def test_verifyK_high_dimensional(self):
         """
         Test verifyK with valid subsampling matrices in higher dimensions using companion matrices.

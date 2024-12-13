@@ -13,6 +13,7 @@ logging.basicConfig(
         logging.StreamHandler()  # Logs will be output to the console
     ]
 )
+#logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 # Helper function for generating filenames
 def genfilename(N, detK, suffix):
@@ -77,9 +78,9 @@ def verifyK(K, detK=2, eps=1e-2):
     logging.debug("Matrix K passed verification.")
     return True
 
-
 def formJ(N, symbolic=False):
     logging.debug(f"Creating congruency transform matrix J with N={N}, symbolic={symbolic}")
+    
     if symbolic:
         sqrt2 = sqrt(2)
         J2 = np.array([[1, I], [1, -I]]) / sqrt2
@@ -97,7 +98,6 @@ def formJ(N, symbolic=False):
 
     logging.debug(f"Final J matrix:\n{J}")
     return J
-
 
 def formlattice(K, J=None, invJ=None):
     logging.debug(f"Forming lattice with K:\n{K}")
