@@ -2,182 +2,183 @@
 #include <pybind11/numpy.h>
 #include <pybind11/eigen.h>
 #include <Eigen/Core>
-#include <iostream>
 #include <cmath>
 #include <limits>
+#include <vector>
+#include <set>
 
 namespace py = pybind11;
-
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+// Simple sign function
 inline double sgn1(double x) {
     return (x > 0) - (x < 0);
 }
 
-// Function to print Eigen::MatrixXd
-void printMatrix(const Eigen::MatrixXd& mat, const std::string& name) {
-    std::cout << "Matrix: " << name << std::endl;
-    for (int i = 0; i < mat.rows(); ++i) {
-        for (int j = 0; j < mat.cols(); ++j) {
-            std::cout << mat(i, j) << " ";
+class Solution {
+public:
+    VectorXd u;
+    double dist;
+    
+    Solution(const VectorXd& u_, double d) : u(u_), dist(d) {}
+    
+    bool operator<(const Solution& other) const {
+        for (int i = 0; i < u.size(); ++i) {
+            double diff = u[i] - other.u[i];
+            if (std::abs(diff) > 1e-10) {
+                return diff < 0;
+            }
         }
-        std::cout << std::endl;
+        return false;  // Equal vectors
     }
-}
+};
 
-// Function to print Eigen::Map<Eigen::MatrixXd>
-void printMatrix(const Eigen::Map<Eigen::MatrixXd>& mat, const std::string& name) {
-    std::cout << "Matrix: " << name << std::endl;
-    for (int i = 0; i < mat.rows(); ++i) {
-        for (int j = 0; j < mat.cols(); ++j) {
-            std::cout << mat(i, j) << " ";
-        }
-        std::cout << std::endl;
+void check_neighbors(const VectorXd& x, const MatrixXd& H_map,
+                     const VectorXd& u_center, double center_dist,
+                     std::set<Solution>& solutions, double& bestdist,
+                     double epsilon) {
+    solutions.insert(Solution(u_center, center_dist));
+    bestdist = center_dist;
+
+    if (!H_map.isIdentity(1e-10)) {
+        return;
     }
-}
 
-// Function to print Eigen::Map with specific storage order
-void printMatrix(const Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& mat, const std::string& name) {
-    std::cout << "Matrix: " << name << std::endl;
-    for (int i = 0; i < mat.rows(); ++i) {
-        for (int j = 0; j < mat.cols(); ++j) {
-            std::cout << mat(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-// Overloaded function to print pybind11 numpy arrays
-void printMatrix(const py::array_t<double>& arr, const std::string& name) {
-    auto buf = arr.request();
-    auto ptr = static_cast<double*>(buf.ptr);
-    int rows = buf.shape[0];
-    int cols = buf.shape[1];
-
-    std::cout << "Matrix: " << name << std::endl;
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            std::cout << ptr[i * cols + j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-// Function to print Eigen::Array<bool, Eigen::Dynamic, 1>
-void printArray(const Eigen::Array<bool, Eigen::Dynamic, 1>& v, const std::string& name) {
-    std::cout << "Array: " << name << std::endl;
-    for (int i = 0; i < v.size(); ++i) {
-        std::cout << v(i) << " ";
-    }
-    std::cout << std::endl;
-}
-
-// Function to select rows based on a boolean array
-inline MatrixXd selectRows(const MatrixXd& m, const Eigen::Array<bool, Eigen::Dynamic, 1>& v) {
-    int n = v.count();
-    MatrixXd r(n, m.cols());
-    int k = 0;
-    for (int i = 0; i < v.size(); i++) {
-        if (v(i)) {
-            r.row(k++) = m.row(i);
+    // Check if we're at a corner point that needs neighbor generation
+    bool at_half = true;
+    for (int i = 0; i < x.size(); i++) {
+        double diff = std::abs(std::abs(x[i] - std::round(x[i])) - 0.5);
+        if (diff > 1e-10) {
+            at_half = false;
+            break;
         }
     }
-    return r;
+
+    if (!at_half) {
+        return;
+    }
+
+    // Generate all corners of the hypercube
+    int n = x.size();
+    int num_corners = 1 << n;
+    for (int i = 0; i < num_corners; i++) {
+        VectorXd corner = VectorXd::Zero(n);
+        for (int j = 0; j < n; j++) {
+            corner[j] = (i & (1 << j)) ? 1 : 0;
+        }
+        solutions.insert(Solution(corner, center_dist));
+    }
 }
 
-py::array_t<double> closestIndexC(py::array_t<double> H, py::array_t<double> x = py::array_t<double>(), bool allnn = true, double epsilon = -1.0) {
+py::array_t<double> closestIndexC(py::array_t<double> H,
+                                 py::array_t<double> x = py::array_t<double>(),
+                                 bool allnn = true,
+                                 double epsilon = -1.0) {
     py::buffer_info H_buf = H.request();
     auto H_ptr = static_cast<double*>(H_buf.ptr);
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> H_map(H_ptr, H_buf.shape[0], H_buf.shape[1]);
-
-    int n = H_map.rows();
-
-    // Set epsilon based on the value of allnn
-    if (epsilon == -1.0) {
-        if (allnn) {
-            epsilon = 1e-8;
-        } else {
-            epsilon = 0.0;
-        }
+    int n = static_cast<int>(H_buf.shape[0]);
+    
+    Eigen::Map<MatrixXd> H_map(H_ptr, n, n);
+    
+    bool compCP = x.size() == 0;
+    if (epsilon < 0) {
+        epsilon = allnn ? 1e-8 : 0.0;
     }
 
+    MatrixXd e = MatrixXd::Zero(n, n);
+    VectorXd u = VectorXd::Zero(n);
+    VectorXd dist = VectorXd::Zero(n);
+    std::set<Solution> solutions;
     double bestdist = std::numeric_limits<double>::infinity();
-    int k = n;
-    MatrixXd dist = MatrixXd::Zero(n, 1);
-
-    MatrixXd e = MatrixXd::Zero(H_map.rows(), H_map.cols());
-    bool compCP = x.size() == 0;
+    
+    VectorXd x_vec;
     if (!compCP) {
         py::buffer_info x_buf = x.request();
         auto x_ptr = static_cast<double*>(x_buf.ptr);
-        Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> x_map(x_ptr, 1, H_buf.shape[1]);
-        e.row(k - 1) = x_map * H_map;
-    } else {
-        compCP = true; // second arg may be present, but empty
+        Eigen::Map<VectorXd> x_map(x_ptr, n);
+        x_vec = x_map;
+        e.row(n-1) = x_map.transpose();
     }
-
-    MatrixXd u = MatrixXd::Zero(1, n);
-    u(k - 1) = round(e(k - 1, k - 1));
-
-    MatrixXd uhat(0, H_map.cols()), dhat(0, 1);
-
-    double y = (e(k - 1, k - 1) - u(k - 1)) / H_map(k - 1, k - 1);
-    MatrixXd step = MatrixXd::Zero(n, 1);
-    step(k - 1) = sgn1(y);
+    
+    int k = n;
+    double y = 0.0;
+    VectorXd step = VectorXd::Zero(n);
+    
+    // Initialize first level
+    u(k-1) = std::round(e(k-1, k-1) / H_map(k-1, k-1));
+    y = (e(k-1, k-1) / H_map(k-1, k-1)) - u(k-1);
+    step(k-1) = sgn1(y);
+    if (step(k-1) == 0.0) step(k-1) = 1.0;
 
     while (true) {
-        double newdist = dist(k - 1) + y * y;
+        double newdist = dist(k-1) + y * y;
+        bool improvement = std::isinf(bestdist) || newdist <= bestdist * (1.0 + epsilon);
 
-        if ((newdist - bestdist) < (epsilon * bestdist)) {
+        if (improvement) {
             if (k != 1) {
-                e.block(k - 2, 0, 1, k - 1) = e.block(k - 1, 0, 1, k - 1) - y * H_map.block(k - 1, 0, 1, k - 1);
                 k--;
-                dist(k - 1) = newdist;
-                double ekk = e(k - 1, k - 1);
-                u(k - 1) = round(ekk); // closest layer
-                y = (ekk - u(k - 1)) / H_map(k - 1, k - 1);
-                step(k - 1) = sgn1(y);
+                e.row(k-1) = e.row(k) - u(k) * H_map.row(k);
+                dist(k-1) = newdist;
+                u(k-1) = std::round(e(k-1, k-1) / H_map(k-1, k-1));
+                y = (e(k-1, k-1) / H_map(k-1, k-1)) - u(k-1);
+                step(k-1) = sgn1(y);
+                if (step(k-1) == 0.0) step(k-1) = 1.0;
             } else {
-                if (!compCP || (newdist != 0)) {
-                    if (allnn) {
-                        uhat.conservativeResize(uhat.rows() + 1, H_map.cols());
-                        uhat.row(uhat.rows() - 1) = u;
-                        dhat.conservativeResize(dhat.rows() + 1, 1);
-                        dhat(dhat.rows() - 1) = newdist;
-                    } else { // only keep closest point
-                        uhat = u;
-                        k++;
-                    }
-                    bestdist = std::min(bestdist, double(newdist));
+                if (!compCP || newdist > 0) {
+                    check_neighbors(x_vec, H_map, u, newdist, solutions, bestdist, epsilon);
                 }
-                u(k - 1) = u(k - 1) + step(k - 1);
-                y = (e(k - 1, k - 1) - u(k - 1)) / H_map(k - 1, k - 1);
-                step(k - 1) = -step(k - 1) - sgn1(step(k - 1));
+                
+                double old_step = step(k-1);
+                u(k-1) = u(k-1) + step(k-1);
+                y = (e(k-1, k-1) / H_map(k-1, k-1)) - u(k-1);
+                step(k-1) = -step(k-1) - sgn1(old_step);
+                
+                if (step(k-1) == 0.0 && std::abs(old_step) < 1e-10) break;
             }
         } else {
-            if (k == n) {
-                if (allnn) {
-                    dhat /= bestdist;
-                    Eigen::Array<bool, Eigen::Dynamic, 1> dsel = dhat.array() < double(1 + epsilon);
-                    uhat = selectRows(uhat, dsel);
-                }
-                // Create output matrix
-                py::array_t<double> result({uhat.rows(), uhat.cols()});
-                auto result_buf = result.request();
-                double* result_ptr = static_cast<double*>(result_buf.ptr);
-                Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(result_ptr, uhat.rows(), uhat.cols()) = uhat;
-                return result;
-            } else {
-                k++;
-                u(k - 1) = u(k - 1) + step(k - 1);
-                y = (e(k - 1, k - 1) - u(k - 1)) / H_map(k - 1, k - 1);
-                step(k - 1) = -step(k - 1) - sgn1(step(k - 1));
-            }
+            if (k == n) break;
+            k++;
+            double old_step = step(k-1);
+            u(k-1) = u(k-1) + step(k-1);
+            y = (e(k-1, k-1) / H_map(k-1, k-1)) - u(k-1);
+            step(k-1) = -step(k-1) - sgn1(old_step);
+            if (step(k-1) == 0.0) step(k-1) = 1.0;
         }
     }
+
+    // Convert solutions to matrix
+    py::array_t<double> result;
+    if (solutions.size() > 0) {
+        result = py::array_t<double>(std::vector<py::ssize_t>{static_cast<py::ssize_t>(solutions.size()), static_cast<py::ssize_t>(n)});
+        auto result_buf = result.request();
+        double* result_ptr = static_cast<double*>(result_buf.ptr);
+
+        int idx = 0;
+        for (const auto& sol : solutions) {
+            for (int j = 0; j < n; ++j) {
+                result_ptr[idx * n + j] = sol.u[j];
+            }
+            idx++;
+        }
+    } else {
+        // Single result case
+        result = py::array_t<double>(std::vector<py::ssize_t>{1, static_cast<py::ssize_t>(n)});
+        auto result_buf = result.request();
+        double* result_ptr = static_cast<double*>(result_buf.ptr);
+        
+        for (int j = 0; j < n; ++j) {
+            result_ptr[j] = u[j];
+        }
+    }
+
+    return result;
 }
 
 PYBIND11_MODULE(closest_index_cpp, m) {
-    m.def("closestIndexC", &closestIndexC, py::arg("H"), py::arg("x") = py::array_t<double>(), py::arg("allnn") = true, py::arg("epsilon") = -1.0);
+    m.def("closestIndexC", &closestIndexC,
+          py::arg("H"),
+          py::arg("x") = py::array_t<double>(),
+          py::arg("allnn") = true,
+          py::arg("epsilon") = -1.0);
 }
