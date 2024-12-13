@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-import scipy.linalg as la
+from scipy.linalg import companion
 from sympy import I, sqrt, eye
 
 import logging
@@ -18,6 +18,40 @@ logging.basicConfig(
 # Helper function for generating filenames
 def genfilename(N, detK, suffix):
     return f"lattices_dim{N}_det{detK}_{suffix}.npy"
+
+import numpy as np
+from scipy.linalg import companion
+
+def genK(ND, detK, coe=0):
+    """
+    Generate a dilation matrix K similar to the MATLAB function genK.
+    
+    Parameters:
+    - ND: int, dimension of the matrix.
+    - detK: int, determinant of the matrix.
+    - coe: int, central coefficient (only applies if ND is even).
+    
+    Returns:
+    - K: numpy.ndarray, the generated dilation matrix.
+    """
+    if ND % 2:  # Odd dimension
+        cp = np.ones(ND + 1)
+        cp[1:ND] = 0
+        cp[ND] = -detK
+    else:  # Even dimension
+        cp = np.ones(ND + 1)
+        cp[1:ND // 2] = 0
+        cp[ND // 2 + 1:ND] = 0
+        cp[ND] = detK
+        cp[ND // 2] = coe  # Set the central coefficient
+
+        # Enforce constraint on coe: |coe| <= floor(2 * sqrt(D))
+        max_coe = int(np.floor(2 * np.sqrt(detK)))
+        assert abs(coe) <= max_coe, f"Central coefficient coe={coe} exceeds the allowed range ±{max_coe}"
+
+    # Generate the companion matrix
+    K = companion(cp)
+    return K
 
 def verifyK(K, detK=2, eps=1e-2):
     """

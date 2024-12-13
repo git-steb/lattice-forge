@@ -11,6 +11,7 @@ from LatticeForge.lattice_design_pipeline import (
     verifyK,
     formlattice,
     searchK,
+    genK,
     doall,
     enumerate_matrices
 )
@@ -74,6 +75,60 @@ class TestFormJ(unittest.TestCase):
         result = formJ(4, symbolic=True)
         np.testing.assert_array_equal(result, expected)
 
+
+class TestGenK(unittest.TestCase):
+    def test_genK_odd_dimension(self):
+        """Test genK for an odd dimension."""
+        ND = 3
+        D = 2
+        K = genK(ND, D)
+        expected_det = D
+        
+        # Check the shape of the matrix
+        self.assertEqual(K.shape, (ND, ND))
+        
+        # Check the determinant
+        computed_det = round(np.linalg.det(K))
+        self.assertEqual(computed_det, expected_det)
+        
+    def test_genK_even_dimension_default_coe(self):
+        """Test genK for an even dimension with default central coefficient."""
+        ND = 4
+        D = 3
+        K = genK(ND, D)
+        expected_det = D
+        
+        # Check the shape of the matrix
+        self.assertEqual(K.shape, (ND, ND))
+        
+        # Check the determinant
+        computed_det = round(np.linalg.det(K))
+        self.assertEqual(computed_det, expected_det)
+        
+    def test_genK_even_dimension_with_coe(self):
+        """Test genK for an even dimension with a specified central coefficient."""
+        ND = 4
+        D = 4
+        coe = 2
+        K = genK(ND, D, coe)
+        expected_det = D
+        
+        # Check the shape of the matrix
+        self.assertEqual(K.shape, (ND, ND))
+        
+        # Check the determinant
+        computed_det = round(np.linalg.det(K))
+        self.assertEqual(computed_det, expected_det)
+        
+    def test_genK_invalid_coe(self):
+        """Test genK with an invalid central coefficient that exceeds the allowed range."""
+        ND = 4
+        D = 4
+        coe = 10  # This might be invalid based on the constraint
+        
+        with self.assertRaises(AssertionError):
+            K = genK(ND, D, coe)
+
 class TestLatticePipeline(unittest.TestCase):
 
     def test_verifyK_valid(self):
@@ -122,7 +177,7 @@ class TestLatticePipeline(unittest.TestCase):
     
     def test_doall(self):
         """
-        Test the doall function to ensure the pipeline runs successfully.
+        Test txhe doall function to ensure the pipeline runs successfully.
         """
         results = doall(N=2, detK=2, forcerecompute=True, usecompangen=False, ngen=1, optimize=True)
         self.assertIsInstance(results, list)

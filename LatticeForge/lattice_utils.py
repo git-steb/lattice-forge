@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product
 
+import logging
+
 def normdet(R, target_det=1.0):
     """
     Normalize the determinant of a matrix to a target value.
@@ -117,9 +119,9 @@ def rasterize(R, xofs=None, eps=1e-7, minbvol=False, sortit=False):
 
     return points[:, inside].T
 
-def samplecube(R, xofs=None, eps=1e-5, epsdirub=-1, maxmemMB=128):
+def samplecube(R, xofs=None, eps=1e-5, epsdirub=1, maxmemMB=128):
     """
-    Generate lattice points within the unit hypercube with comprehensive point generation.
+    Generate lattice points within the dynamically determined hypercube region.
 
     Parameters:
     - R (np.ndarray): Basis matrix of the lattice.
@@ -135,44 +137,40 @@ def samplecube(R, xofs=None, eps=1e-5, epsdirub=-1, maxmemMB=128):
     if xofs is None:
         xofs = np.zeros(N)
 
-    UB = 1.0
-    LB = 0.0
-
-    # Determine point generation strategy based on matrix characteristics
+    # Compute the inverse of R to determine the bounds in the indexing space
     try:
-        # Use the inverse of the smallest singular value to determine sampling density
-        _, s, _ = np.linalg.svd(R)
-        min_singular_value = min(s)
-        nsmp = max(2, int(1 / min_singular_value))
+        R_inv = np.linalg.inv(R)
     except np.linalg.LinAlgError:
-        nsmp = 2  # Default to a reasonable value
+        raise ValueError("R is singular or not invertible")
 
-    # Fallback to rasterize for high-dimensional or complex cases
-    if N > 7:
-        Rr = striplattice(R)
-        return rasterize(Rr, xofs, eps)
+    # Define the unit hypercube corners in the target space
+    unit_corners = np.array(np.meshgrid(*([[0, 1]] * N))).T.reshape(-1, N)
 
-    # Generate comprehensive grid of points
-    ranges = []
-    for i in range(N):
-        # Ensure we generate multiple points when possible
-        range_vals = np.linspace(LB, UB, num=nsmp, endpoint=True)
-        ranges.append(range_vals)
+    # Map the unit hypercube corners to the indexing space
+    bbox_corners = (unit_corners - xofs) @ R_inv.T
 
-    # Generate all possible combinations
+    # Determine LB (lower bound) and UB (upper bound) by rounding down and up to the nearest integers
+    LB = np.floor(np.min(bbox_corners, axis=0)).astype(int)
+    UB = np.ceil(np.max(bbox_corners, axis=0)).astype(int)
+
+    logging.debug(f"Bounding Box Corners in Indexing Space:\n{bbox_corners}")
+    logging.debug(f"Calculated Lower Bound (LB):\n{LB}")
+    logging.debug(f"Calculated Upper Bound (UB):\n{UB}")
+
+    # Generate comprehensive grid of points within the determined bounds
+    ranges = [np.arange(LB[i], UB[i] + 1) for i in range(N)]
     grid = ndgridmat(ranges)
 
-    # Transform grid points
-    points = (R @ grid) + xofs[:, None]
+    # Transform grid points back to the target space
+    points = (R @ grid).T + xofs
 
-    # Robust filtering of points
+    # Robust filtering of points to ensure they lie within the unit hypercube
     inside = np.all(
-        (points >= LB - eps) &
-        (points <= UB + epsdirub * eps),
-        axis=0
+        (points >= -eps) & (points <= 1 + epsdirub * eps),
+        axis=1
     )
 
-    filtered_points = points[:, inside].T
+    filtered_points = points[inside]
 
     # Ensure unique points
     filtered_points = np.unique(filtered_points, axis=0)
