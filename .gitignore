@@ -23,3 +23,15 @@ func.patch
 # Eigen CMake files
 LatticeForge/eigen/Eigen/CMakeLists.txt
 LatticeForge/eigen/Eigen/src/*/CMakeLists.txt
+
+.DS_Store
+.vscode/
+LatticeForge/CMakeLists.txt
+CMakeCache.txt
+CMakeFiles/
+*egg-info/
+Makefile
+doc/
+1
+*.npy
+tmp/
