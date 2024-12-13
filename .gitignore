@@ -1,0 +1,25 @@
+# Compiled binaries
+*.so
+*.orig
+*.rej
+
+# Build artifacts
+build/
+build-delete/
+dist/
+cmake_install.cmake
+
+# Backup files
+*.zip
+
+# Cache files
+__pycache__/
+tests/__pycache__/
+LatticeForge/__pycache__/
+
+# Patches
+func.patch
+
+# Eigen CMake files
+LatticeForge/eigen/Eigen/CMakeLists.txt
+LatticeForge/eigen/Eigen/src/*/CMakeLists.txt
