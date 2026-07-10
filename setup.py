@@ -23,12 +23,12 @@ ext_modules = [
 setup(
     name='LatticeForge',
     version='0.1.0',
-    author='Your Name',
-    author_email='your.email@example.com',
-    description='A package to create lattice bases, generate lattice point sets, compute Voronoi polytopes, and optimize designs for statistical models',
+    author='Steven Bergner',
+    author_email='git-steb@users.noreply.github.com',
+    description='Lattice-based design construction for computer experiments and Gaussian-process emulation',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/yourusername/LatticeForge',
+    url='https://github.com/git-steb/lattice-forge',
     packages=find_packages(),
     ext_modules=ext_modules,
     install_requires=[

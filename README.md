@@ -1,89 +1,77 @@
 # LatticeForge
 
-**LatticeForge** is a Python library for working with lattice-based designs, including creating lattice bases, generating lattice point sets, computing Voronoi polytopes, and optimizing designs for statistical models.
+LatticeForge is a research prototype for constructing and inspecting
+lattice-based designs for computer experiments. It focuses on integer lattice
+bases, dilation matrices, nested point sets, Voronoi geometry, and
+space-filling diagnostics for Gaussian-process emulation and related statistical
+design problems.
 
-## Features
+The current code is intentionally close to the design-construction layer: it
+generates lattice point sets in bounded regions, studies refinement by integer
+dilation, and exposes small visual and testable surfaces for checking how a
+candidate design occupies space.
 
-- **Create Lattice Bases**: Easily define and manipulate lattice bases.
-- **Generate Lattice Point Sets**: Generate points within unit hypercubes using advanced rasterization techniques.
-- **Handle Offsets**: Generate lattice points with optional non-zero offsets.
-- **Compute Voronoi Polytopes**: Calculate Voronoi cells for lattice points.
-- **Optimize Designs**: Useful for statistical models and sampling applications.
+## Current Surface
 
-## Installation
+- Lattice basis and point-set construction in `LatticeForge/`
+- Rasterization and nearest-lattice-point utilities, with a compiled C++
+  extension path where useful
+- Search and verification helpers for integer dilation matrices
+- Voronoi-based visualization of nested lattice designs in
+  `notebooks/voronoi_lattice_visualization.py`
+- A static notebook rendering under GitHub Pages:
+  <https://git-steb.github.io/lattice-forge/>
 
-You can install the package using `pip` from the root directory of the repository:
+## Why This Repository Exists
+
+Sequential computer experiments often need designs that remain useful after
+each additional batch. Lattice constructions give a concrete way to study that
+problem: refinement, spacing, projection behavior, and local neighborhoods can
+be made explicit enough to inspect, test, and eventually optimize.
+
+This repository is the companion code surface for that design work. The current
+interface is research-facing and may change as the design-construction layer is
+tightened.
+
+## Install
+
+From the repository root:
 
 ```bash
 pip install -e .
 ```
 
-### Dependencies
+The package expects NumPy, SciPy, pybind11, and a compiler toolchain for the
+C++ extension.
 
-Make sure you have the following dependencies installed:
+## Quick Checks
 
-- **NumPy**
-- **SciPy**
-- **Eigen** (for compiled C++ extensions)
-
-If building the C++ extensions fails, ensure your system has a compatible compiler installed (e.g., `gcc` or `clang`).
-
-## Usage
-
-### Example: Finding the Closest Lattice Point
-
-Here's a basic example of using `closestIndex` to find the closest lattice point:
-
-```python
-import numpy as np
-from LatticeForge import closestIndex
-
-# Define a lattice basis
-R = np.array([[1, 0], [0, 1]])
-
-# Define a point
-x = np.array([0.5, 0.5])
-
-# Find the closest lattice point
-uhat = closestIndex(R, x)
-print(uhat)
-```
-
-### Example: Rasterizing a Lattice with an Offset
-
-Generate lattice points within a unit hypercube with a non-zero offset:
-
-```python
-from LatticeForge import rasterize
-import numpy as np
-
-# Define a lattice basis
-R = np.array([[1.02, 0.09], [0.01, 1.00]])
-
-# Define an offset
-xofs = np.array([0.5, 0.5])
-
-# Rasterize lattice points with offset
-points = rasterize(R, xofs=xofs, eps=1e-6, minbvol=True, sortit=True)
-print(points)
-```
-
-## Testing
-
-To run the test suite, use the following command:
+Run the standard test discovery command:
 
 ```bash
 python -m unittest discover tests
 ```
 
-### Run a Specific Test
-
-For example, to test rasterization with a non-zero offset:
+Check the Voronoi visualization script directly:
 
 ```bash
-python -m unittest tests.test_lattice_design_pipeline.TestLatticePipeline.test_rasterize_with_nonzero_xofs
+python -m py_compile notebooks/voronoi_lattice_visualization.py
 ```
 
-## License
+## Example
 
-This project is licensed under the MIT License – see the `LICENSE` file for details.
+```python
+import numpy as np
+from LatticeForge.lattice_utils import rasterize
+
+R = np.array([[1.02, 0.09], [0.01, 1.00]])
+xofs = np.array([0.5, 0.5])
+
+points = rasterize(R, xofs=xofs, eps=1e-6, minbvol=True, sortit=True)
+print(points)
+```
+
+## Status
+
+Active research code. Interfaces may change while the design-construction
+story is being tightened.
