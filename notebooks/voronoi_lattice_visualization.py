@@ -13,7 +13,11 @@ from scipy.spatial import Voronoi, voronoi_plot_2d
 from scipy.linalg import companion
 
 # Import functions from LatticeForge
-from LatticeForge.lattice_utils import normdet, samplecube, ndgridmat, rasterize, striplattice
+from LatticeForge.lattice_utils import (
+    normdet, samplecube,
+    ndgridmat, rasterize, striplattice,
+)
+from LatticeForge.lattice_design_pipeline import searchK
 import logging
 
 # Configure logging for debugging
@@ -133,18 +137,28 @@ def plot_voronoi_with_lattices(beta=2, N=2, eps=1e-3):
 
     # Plot the Voronoi diagram
     fig, ax = plt.subplots(figsize=(8, 8))
+
+    # Add unit square with thin dark gray lines
+    from matplotlib.patches import Rectangle
+    unit_square = Rectangle((0, 0), 1, 1, linewidth=0.5, edgecolor='darkgray', facecolor='none')
+    ax.add_patch(unit_square)
+
     voronoi_plot_2d(vor, ax=ax, show_vertices=False, line_colors='blue', line_width=1, line_alpha=0.6)
     ax.plot(coarse_points[:, 0], coarse_points[:, 1], 'ro', markersize=8, label='Coarse Grid Points')
     ax.plot(fine_points[:, 0], fine_points[:, 1], 'go', markersize=4, label='Fine Grid Points')
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
-    ax.set_title(f'Voronoi Diagram with β={beta} Dilation')
+    ax.set_title(f'Lattice design Voronoi cells, with dilation of β={beta}')
     ax.legend()
-    ax.grid(True)
+    # ax.grid(True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.show()
 
 #%%
 
 plot_voronoi_with_lattices(beta=2, N=2, eps=1e-3)
 
-# %%
+#%%
+
+Ks = searchK(N=2, detK=2, value_range=(-2, 2), nsamp=100, save=False)
