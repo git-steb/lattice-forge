@@ -3,7 +3,12 @@ import unittest
 import numpy as np
 
 from LatticeForge.design_diagnostics import (
+    addition_diagnostics,
+    candidate_addition_diagnostics,
+    criterion_direction,
     design_diagnostics,
+    diagnostic_delta,
+    diagnostic_score,
     fill_distance_grid,
     mesh_ratio_grid,
     metric_gram,
@@ -76,6 +81,49 @@ class TestDesignDiagnostics(unittest.TestCase):
         projected = projected_diagnostics(points, projection_orders=(2,), grid_size=3)
 
         self.assertEqual(set(projected.keys()), {"0,1", "0,2", "1,2"})
+
+    def test_addition_diagnostics_reports_fill_improvement(self):
+        points = np.array([[0.0, 0.0], [1.0, 0.0]])
+
+        report = addition_diagnostics(
+            points,
+            np.array([0.5, 0.5]),
+            grid_size=3,
+        )
+
+        self.assertEqual(report["baseline"]["n_points"], 2)
+        self.assertEqual(report["after"]["n_points"], 3)
+        self.assertLess(report["delta"]["fill_distance"], 0.0)
+
+    def test_candidate_addition_ranking_prefers_center_by_fill(self):
+        points = np.array([[0.0, 0.0], [1.0, 0.0]])
+        candidates = np.array(
+            [
+                [0.0, 1.0],
+                [0.5, 0.5],
+                [1.0, 1.0],
+            ]
+        )
+
+        report = candidate_addition_diagnostics(
+            points,
+            candidates,
+            grid_size=3,
+            rank_by="fill_distance",
+        )
+
+        self.assertEqual(report["direction"], "minimize")
+        self.assertEqual(report["candidates"][0]["candidate_index"], 1)
+        self.assertLess(report["candidates"][0]["score_delta"], 0.0)
+
+    def test_diagnostic_score_and_delta_are_explicit(self):
+        before = {"fill_distance": 1.0, "mesh_ratio": 2.0}
+        after = {"fill_distance": 0.5, "mesh_ratio": 1.5}
+
+        self.assertEqual(criterion_direction("separation"), "maximize")
+        self.assertEqual(criterion_direction("fill_distance"), "minimize")
+        self.assertAlmostEqual(diagnostic_score(after, "mesh_ratio"), 1.5)
+        self.assertAlmostEqual(diagnostic_delta(before, after)["fill_distance"], -0.5)
 
 
 if __name__ == "__main__":

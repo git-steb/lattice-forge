@@ -19,6 +19,8 @@ candidate design occupies space.
 - Search and verification helpers for integer dilation matrices
 - Deterministic design diagnostics for separation, approximate fill distance,
   mesh ratio, projection behavior, and GP metric-frame reads
+- Candidate-addition diagnostics that rank one-point continuations by explicit
+  criteria such as fill distance, mesh ratio, separation, or projected reads
 - Voronoi-based visualization of nested lattice designs in
   `notebooks/voronoi_lattice_visualization.py`
 - A static notebook rendering under GitHub Pages:

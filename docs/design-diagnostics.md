@@ -24,6 +24,31 @@ continuous optimization result. That is useful for paper work because it makes
 small examples replayable and exposes which criterion changed after adding or
 projecting points.
 
+## Candidate Additions
+
+The executable surface also supports before/after reads for new points:
+
+- `addition_diagnostics(X, A, ...)` compares a design `X` with `X union A`;
+- `candidate_addition_diagnostics(X, C, rank_by=...)` evaluates one candidate at
+  a time and ranks candidates under the stated criterion;
+- `diagnostic_delta(before, after)` records which scalar reads changed.
+
+The supported ranking criteria are deliberately explicit:
+
+```text
+fill_distance                 minimize
+mesh_ratio                    minimize
+max_projected_fill_distance   minimize
+max_projected_mesh_ratio      minimize
+separation                    maximize
+nearest_pair_distance         maximize
+min_projected_separation      maximize
+```
+
+This answers a narrow but important sequential-design question: under a fixed
+admissible candidate set, which point currently improves the chosen diagnostic?
+It does not claim that the candidate set itself is globally optimal.
+
 ## GP Metric Frames
 
 Gaussian-process length scales change the geometry in which distances should be
@@ -61,8 +86,9 @@ It is:
 3. Which of those changes still matter after the GP metric frame is applied?
 4. Which projection requirements are preserved, improved, or broken?
 
-This diagnostic layer answers those questions for small finite examples now.
-The later typed Haskell reference core can then own the exact construction and
-certificates, while this public Python surface remains a readable statistical
-inspection layer.
-
+This diagnostic layer answers the second, third, and fourth questions for small
+finite examples now. The first question still belongs to the construction layer:
+the candidate set should be supplied by lattice refinement, integer dilation,
+or another clearly stated admissibility rule. The later typed Haskell reference
+core can then own the exact construction and certificates, while this public
+Python surface remains a readable statistical inspection layer.

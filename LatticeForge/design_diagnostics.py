@@ -174,6 +174,7 @@ def projected_diagnostics(
             reports[key] = {
                 "dims": dims,
                 "separation": sep,
+                "nearest_pair_distance": nearest_pair_distance(proj_points),
                 "fill_distance": fill,
                 "mesh_ratio": np.inf if sep == 0 else float(fill / sep),
             }
@@ -219,12 +220,204 @@ def design_diagnostics(
     }
 
 
+def diagnostic_delta(before, after):
+    """Return numeric changes from one diagnostics report to another."""
+    scalar_keys = (
+        "separation",
+        "nearest_pair_distance",
+        "fill_distance",
+        "mesh_ratio",
+    )
+    delta = {}
+    for key in scalar_keys:
+        if key in before and key in after:
+            delta[key] = _delta_value(after[key], before[key])
+
+    before_projected = before.get("projected", {})
+    after_projected = after.get("projected", {})
+    projected = {}
+    for key in sorted(set(before_projected) & set(after_projected)):
+        projected[key] = {}
+        for scalar_key in scalar_keys:
+            projected[key][scalar_key] = _delta_value(
+                after_projected[key][scalar_key],
+                before_projected[key][scalar_key],
+            )
+    if projected:
+        delta["projected"] = projected
+    return delta
+
+
+def diagnostic_score(report, criterion="fill_distance"):
+    """Return a scalar score from a diagnostics report.
+
+    Lower is better for fill/mesh criteria; higher is better for separation
+    criteria. Use ``criterion_direction`` to inspect the convention.
+    """
+    if criterion in {
+        "separation",
+        "nearest_pair_distance",
+        "fill_distance",
+        "mesh_ratio",
+    }:
+        return float(report[criterion])
+
+    projected = list(report.get("projected", {}).values())
+    if criterion == "max_projected_fill_distance":
+        return _aggregate(projected, "fill_distance", max)
+    if criterion == "max_projected_mesh_ratio":
+        return _aggregate(projected, "mesh_ratio", max)
+    if criterion == "min_projected_separation":
+        return _aggregate(projected, "separation", min)
+    raise ValueError(f"unknown diagnostic criterion: {criterion}")
+
+
+def criterion_direction(criterion):
+    """Return ``'minimize'`` or ``'maximize'`` for a diagnostic criterion."""
+    if criterion in {
+        "fill_distance",
+        "mesh_ratio",
+        "max_projected_fill_distance",
+        "max_projected_mesh_ratio",
+    }:
+        return "minimize"
+    if criterion in {
+        "separation",
+        "nearest_pair_distance",
+        "min_projected_separation",
+    }:
+        return "maximize"
+    raise ValueError(f"unknown diagnostic criterion: {criterion}")
+
+
+def addition_diagnostics(
+    points,
+    additions,
+    bounds=None,
+    grid_size=11,
+    projection_orders=(1, 2),
+    metric=None,
+    length_scales=None,
+    max_grid_points=250000,
+):
+    """Compare a design before and after adding one point or a batch."""
+    pts = _as_points(points)
+    add = _as_candidate_points(additions, pts.shape[1])
+    baseline = design_diagnostics(
+        pts,
+        bounds=bounds,
+        grid_size=grid_size,
+        projection_orders=projection_orders,
+        metric=metric,
+        length_scales=length_scales,
+        max_grid_points=max_grid_points,
+    )
+    after_points = np.vstack([pts, add])
+    after = design_diagnostics(
+        after_points,
+        bounds=bounds,
+        grid_size=grid_size,
+        projection_orders=projection_orders,
+        metric=metric,
+        length_scales=length_scales,
+        max_grid_points=max_grid_points,
+    )
+    return {
+        "baseline": baseline,
+        "additions": add,
+        "after": after,
+        "delta": diagnostic_delta(baseline, after),
+    }
+
+
+def candidate_addition_diagnostics(
+    points,
+    candidates,
+    bounds=None,
+    grid_size=11,
+    projection_orders=(1, 2),
+    metric=None,
+    length_scales=None,
+    max_grid_points=250000,
+    rank_by="fill_distance",
+):
+    """Rank one-point candidate additions under a diagnostic criterion."""
+    pts = _as_points(points)
+    cand = _as_candidate_points(candidates, pts.shape[1])
+    baseline = design_diagnostics(
+        pts,
+        bounds=bounds,
+        grid_size=grid_size,
+        projection_orders=projection_orders,
+        metric=metric,
+        length_scales=length_scales,
+        max_grid_points=max_grid_points,
+    )
+    baseline_score = diagnostic_score(baseline, rank_by)
+    direction = criterion_direction(rank_by)
+
+    candidate_reports = []
+    for index, point in enumerate(cand):
+        after_points = np.vstack([pts, point])
+        after = design_diagnostics(
+            after_points,
+            bounds=bounds,
+            grid_size=grid_size,
+            projection_orders=projection_orders,
+            metric=metric,
+            length_scales=length_scales,
+            max_grid_points=max_grid_points,
+        )
+        score = diagnostic_score(after, rank_by)
+        candidate_reports.append(
+            {
+                "candidate_index": index,
+                "candidate": tuple(float(x) for x in point),
+                "score": score,
+                "score_delta": _delta_value(score, baseline_score),
+                "after": after,
+                "delta": diagnostic_delta(baseline, after),
+            }
+        )
+
+    candidate_reports.sort(
+        key=lambda report: (
+            _sort_score(report["score"], direction),
+            report["after"]["mesh_ratio"],
+            -report["after"]["separation"],
+            report["candidate_index"],
+        )
+    )
+    return {
+        "baseline": baseline,
+        "rank_by": rank_by,
+        "direction": direction,
+        "baseline_score": baseline_score,
+        "candidates": candidate_reports,
+    }
+
+
 def _as_points(points):
     pts = np.asarray(points, dtype=float)
     if pts.ndim != 2:
         raise ValueError("points must have shape (n_points, dimension).")
     if pts.shape[0] == 0:
         raise ValueError("points must contain at least one point.")
+    return pts
+
+
+def _as_candidate_points(points, dim):
+    pts = np.asarray(points, dtype=float)
+    if pts.ndim == 1:
+        if pts.shape != (dim,):
+            raise ValueError("candidate point has the wrong dimension.")
+        pts = pts.reshape(1, dim)
+    elif pts.ndim != 2:
+        raise ValueError("candidate points must have shape (n_candidates, dimension).")
+    if pts.shape[0] == 0:
+        raise ValueError("candidate points must contain at least one point.")
+    if pts.shape[1] != dim:
+        raise ValueError("candidate points have the wrong dimension.")
     return pts
 
 
@@ -258,3 +451,24 @@ def _min_distances_to_design(candidates, design):
         delta = design - x
         distances.append(np.min(np.sqrt(np.sum(delta * delta, axis=1))))
     return np.asarray(distances, dtype=float)
+
+
+def _delta_value(after, before):
+    after = float(after)
+    before = float(before)
+    if after == before:
+        return 0.0
+    return float(after - before)
+
+
+def _aggregate(reports, key, aggregator):
+    if not reports:
+        return np.nan
+    return float(aggregator(report[key] for report in reports))
+
+
+def _sort_score(score, direction):
+    score = float(score)
+    if direction == "maximize":
+        return -score
+    return score
