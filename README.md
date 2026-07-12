@@ -17,6 +17,8 @@ candidate design occupies space.
 - Rasterization and nearest-lattice-point utilities, with a compiled C++
   extension path where useful
 - Search and verification helpers for integer dilation matrices
+- Deterministic design diagnostics for separation, approximate fill distance,
+  mesh ratio, projection behavior, and GP metric-frame reads
 - Voronoi-based visualization of nested lattice designs in
   `notebooks/voronoi_lattice_visualization.py`
 - A static notebook rendering under GitHub Pages:
@@ -24,6 +26,8 @@ candidate design occupies space.
 - Implementation steering notes:
   `docs/implementation-direction.md` and
   `docs/haskell-reference-core.md`
+- Diagnostic note:
+  `docs/design-diagnostics.md`
 
 ## Why This Repository Exists
 
@@ -73,12 +77,16 @@ Check the Voronoi visualization script directly:
 ```python
 import numpy as np
 from LatticeForge.lattice_utils import rasterize
+from LatticeForge.design_diagnostics import design_diagnostics
 
 R = np.array([[1.02, 0.09], [0.01, 1.00]])
 xofs = np.array([0.5, 0.5])
 
 points = rasterize(R, xofs=xofs, eps=1e-6, minbvol=True, sortit=True)
 print(points)
+
+report = design_diagnostics(points, grid_size=11, length_scales=np.array([0.8, 1.2]))
+print(report["separation"], report["fill_distance"], report["mesh_ratio"])
 ```
 
 ## Status
