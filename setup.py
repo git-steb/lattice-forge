@@ -34,7 +34,9 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'pybind11'
+        'pybind11',
+        'matplotlib',
+        'sympy'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

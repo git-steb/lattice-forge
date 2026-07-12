@@ -21,6 +21,9 @@ candidate design occupies space.
   `notebooks/voronoi_lattice_visualization.py`
 - A static notebook rendering under GitHub Pages:
   <https://git-steb.github.io/lattice-forge/>
+- Implementation steering notes:
+  `docs/implementation-direction.md` and
+  `docs/haskell-reference-core.md`
 
 ## Why This Repository Exists
 
@@ -41,21 +44,28 @@ From the repository root:
 pip install -e .
 ```
 
-The package expects NumPy, SciPy, pybind11, and a compiler toolchain for the
-C++ extension.
+The package expects NumPy, SciPy, matplotlib, SymPy, pybind11, and a compiler
+toolchain for the C++ extension.
+
+For an isolated local check with `uv`:
+
+```bash
+uv venv .venv --python 3.11
+uv pip install --python .venv/bin/python -e .
+```
 
 ## Quick Checks
 
 Run the standard test discovery command:
 
 ```bash
-python -m unittest discover tests
+.venv/bin/python -m unittest discover tests
 ```
 
 Check the Voronoi visualization script directly:
 
 ```bash
-python -m py_compile notebooks/voronoi_lattice_visualization.py
+.venv/bin/python -m py_compile notebooks/voronoi_lattice_visualization.py
 ```
 
 ## Example
