@@ -33,6 +33,23 @@ from LatticeForge.refinement_candidates import refinement_candidate_points
 candidates = refinement_candidate_points(G, K)
 ```
 
+When a selection or paper receipt needs to preserve the quotient address, use
+the batch constructor instead:
+
+```python
+from LatticeForge.refinement_candidates import refinement_candidate_batches
+
+batches = refinement_candidate_batches(G, K)
+for batch in batches:
+    print(batch.representative, batch.offset, batch.points)
+```
+
+The flattened point set is useful for diagnostics, but it is not enough to
+reconstruct why a point was admitted. Each `RefinementCandidateBatch` therefore
+retains the representative `c`, the offset `G K^{-1} c`, and the in-region
+points from that coset. Empty in-region batches are retained so boundary effects
+remain part of the receipt.
+
 For `G = I` and `K = 2I` in two dimensions, the non-base cosets generate the
 mid-edge and center points of the one-step dyadic refinement inside the unit
 square.
@@ -70,6 +87,18 @@ This is not yet an exact covering-radius or continuous Voronoi-cell theorem.
 It is the first replayable candidate-generation receipt.  Exact covering,
 dual-lattice, Voronoi, and Smith-normal-form refinements can be layered on this
 surface without changing the diagnostic contract.
+
+The receipt also separates three objects that have different guarantees:
+
+- the **refinement shell** is the union of all nonbase coset batches;
+- a **coset batch** carries one quotient representative;
+- a **within-shell prefix** is an ordering or partial realization of those
+  points.
+
+Completing the shell realizes the next bounded refinement level. A partial
+prefix is generally not itself a lattice and does not automatically inherit the
+scaled rotational similarity of the completed level. Prefix diagnostics must be
+reported separately.
 
 ## Minimal Receipt
 

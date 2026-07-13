@@ -17,7 +17,8 @@ candidate design occupies space.
 - Rasterization and nearest-lattice-point utilities, with a compiled C++
   extension path where useful
 - Search and verification helpers for integer dilation matrices
-- Coset-derived one-step refinement candidates from an integer dilation matrix
+- Coset-derived one-step refinement candidates from an integer dilation matrix,
+  with quotient representative and offset provenance retained per batch
 - Deterministic design diagnostics for separation, approximate fill distance,
   mesh ratio, projection behavior, and GP metric-frame reads
 - Candidate-addition diagnostics that rank one-point continuations by explicit

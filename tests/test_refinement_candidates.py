@@ -5,6 +5,7 @@ import numpy as np
 from LatticeForge.design_diagnostics import candidate_addition_diagnostics
 from LatticeForge.refinement_candidates import (
     coset_representatives,
+    refinement_candidate_batches,
     refinement_candidate_points,
     refinement_offsets,
 )
@@ -56,6 +57,35 @@ class TestRefinementCandidates(unittest.TestCase):
         self.assertEqual(candidates.shape, expected.shape)
         for point in expected:
             self.assertTrue(any(np.allclose(point, candidate) for candidate in candidates))
+
+    def test_candidate_batches_preserve_coset_provenance(self):
+        G = np.eye(2)
+        K = 2 * np.eye(2, dtype=int)
+
+        batches = refinement_candidate_batches(G, K)
+
+        self.assertEqual(len(batches), 3)
+        self.assertEqual(
+            {batch.representative for batch in batches},
+            {(0, 1), (1, 0), (1, 1)},
+        )
+        self.assertTrue(all(batch.points.shape[1] == 2 for batch in batches))
+
+        flattened = np.vstack([batch.points for batch in batches if batch.points.size])
+        candidates = refinement_candidate_points(G, K)
+        self.assertEqual(flattened.shape, candidates.shape)
+        for candidate in candidates:
+            self.assertTrue(any(np.allclose(candidate, point) for point in flattened))
+
+    def test_candidate_batches_can_include_the_base_coset(self):
+        batches = refinement_candidate_batches(
+            np.eye(2),
+            2 * np.eye(2, dtype=int),
+            include_base=True,
+        )
+
+        self.assertEqual(len(batches), 4)
+        self.assertTrue(any(batch.representative == (0, 0) for batch in batches))
 
     def test_constructed_candidates_can_feed_existing_fill_ranking(self):
         base = np.array(
