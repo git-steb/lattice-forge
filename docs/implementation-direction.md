@@ -114,14 +114,17 @@ Over the next few weeks, keep the work small and defensible:
    surface.
 2. Isolate the mathematical objects currently implicit in Python:
    basis, dilation, region, refinement, projection, and criterion.
-3. Add golden tests that record current behavior for small dimensions and simple
+3. Grow direct refinement constructors before adding broader optimization:
+   coset representatives of `Z^d / K Z^d`, refinement offsets `G K^{-1} c`,
+   and candidate receipts should be the first admitted-family surface.
+4. Add golden tests that record current behavior for small dimensions and simple
    determinant/refinement cases.
-4. Start a Haskell reference core outside the default Python install path.
-5. Compare Haskell outputs against the Python/C++ fixtures before moving any
+5. Start a Haskell reference core outside the default Python install path.
+6. Compare Haskell outputs against the Python/C++ fixtures before moving any
    public API.
-6. Keep the C++ nearest-index kernel as benchmark/reference until a clearer
+7. Keep the C++ nearest-index kernel as benchmark/reference until a clearer
    replacement exists.
-7. Sketch the R-facing boundary only after the typed core has at least one
+8. Sketch the R-facing boundary only after the typed core has at least one
    replayable design-construction receipt.
 
 ## Non-Goals

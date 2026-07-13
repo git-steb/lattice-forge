@@ -49,6 +49,12 @@ This answers a narrow but important sequential-design question: under a fixed
 admissible candidate set, which point currently improves the chosen diagnostic?
 It does not claim that the candidate set itself is globally optimal.
 
+LatticeForge now has a construction-side source for such candidate sets:
+`refinement_candidate_points(G, K, ...)` generates one-step refinement
+candidates from the coset representatives of `Z^d / K Z^d`.  That constructor
+belongs to the lattice layer.  The diagnostic functions here then read the
+admitted candidates under packing, covering, projection, or GP metric frames.
+
 ## GP Metric Frames
 
 Gaussian-process length scales change the geometry in which distances should be
@@ -87,8 +93,10 @@ It is:
 4. Which projection requirements are preserved, improved, or broken?
 
 This diagnostic layer answers the second, third, and fourth questions for small
-finite examples now. The first question still belongs to the construction layer:
-the candidate set should be supplied by lattice refinement, integer dilation,
-or another clearly stated admissibility rule. The later typed Haskell reference
-core can then own the exact construction and certificates, while this public
-Python surface remains a readable statistical inspection layer.
+finite examples now. The first question belongs to the construction layer: the
+candidate set should be supplied by lattice refinement, integer dilation, or
+another clearly stated admissibility rule. The current coset-refinement
+constructor is the first executable version of that boundary. The later typed
+Haskell reference core can then own the exact construction and certificates,
+while this public Python surface remains a readable statistical inspection
+layer.

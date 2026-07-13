@@ -3,5 +3,6 @@ from .lattice_utils import *
 from .lattice_plot_helpers import *
 from .lattice_design_pipeline import *
 from .design_diagnostics import *
+from .refinement_candidates import *
 
 #__all__ = ['closestIndex', 'samplecube', 'normdet', 'relevant_vectors']
