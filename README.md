@@ -51,7 +51,7 @@ tightened.
 
 ## Install
 
-From the repository root:
+Use Python 3.10 or later. From the repository root:
 
 ```bash
 pip install -e .
