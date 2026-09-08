@@ -127,6 +127,22 @@ Over the next few weeks, keep the work small and defensible:
 8. Sketch the R-facing boundary only after the typed core has at least one
    replayable design-construction receipt.
 
+The public bounded-region sampler follows the same division of labour.
+`samplecube(..., maxmemMB=...)` traverses its certified integer address box in
+bounded chunks and returns the same explicit NumPy point matrix as before. For
+large address boxes it recovers the central implementation principle of the
+original MATLAB `lattice/rasterize.m`: extend integer addresses dimension by
+dimension and discard a prefix only when a conservative enclosure proves that
+no completion can enter the requested region. The final point-in-region test
+remains exact up to the caller's declared tolerance.
+
+This is an implementation recovery, not a new construction or optimization
+claim. It does not expose a private selection policy or make Python the owner of
+a new theorem. The internal typed reference may remain lazy; Python materializes
+only the final public result expected by existing callers. A later native kernel
+can replace the traversal behind this behavior-preserving boundary after golden
+cross-language checks exist.
+
 ## Non-Goals
 
 - Do not make GHC a required dependency for ordinary Python installation yet.
