@@ -14,8 +14,11 @@ candidate design occupies space.
 ## Current Surface
 
 - Lattice basis and point-set construction in `LatticeForge/`
-- Rasterization and nearest-lattice-point utilities, with a compiled C++
-  extension path where useful
+- Memory-bounded unit-cube rasterization in `LatticeForge/bounded_sampling.py`,
+  with both a conventional NumPy result and an address-preserving batch
+  iterator
+- Nearest-lattice-point utilities, with a compiled C++ extension path where
+  useful
 - Search and verification helpers for integer dilation matrices
 - Coset-derived one-step refinement candidates from an integer dilation matrix,
   with quotient representative and offset provenance retained per batch
@@ -94,6 +97,32 @@ print(candidates)
 report = design_diagnostics(candidates, grid_size=11, length_scales=np.array([0.8, 1.2]))
 print(report["separation"], report["fill_distance"], report["mesh_ratio"])
 ```
+
+For a larger bounded design, consume construction batches without first
+forming the complete point matrix:
+
+```python
+from LatticeForge import CubeTraversalDiagnostics, iter_unit_cube_batches
+
+diagnostics = CubeTraversalDiagnostics()
+for batch in iter_unit_cube_batches(
+    G,
+    shift=np.zeros(G.shape[0]),
+    max_memory_mib=32,
+    diagnostics=diagnostics,
+):
+    addresses = batch.addresses
+    points = batch.points
+    # Store, plot, or evaluate this bounded batch.
+
+print(diagnostics.to_dict())
+```
+
+This is the bounded-region operation in the RotGrid construction: determine a
+finite integer-address enclosure, generate physical lattice points, and keep
+those inside the declared half-open cube. The iterator changes memory use, not
+the design. It does not select a lattice, rotation, shift, refinement path, or
+statistical criterion.
 
 ## Status
 

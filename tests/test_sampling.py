@@ -1,6 +1,12 @@
 #%% tests/test_sampling.py
 import unittest
 import numpy as np
+from LatticeForge.bounded_sampling import (
+    CubeTraversalDiagnostics,
+    iter_unit_cube_batches,
+    sample_unit_cube,
+    unit_cube_address_bounds,
+)
 from LatticeForge.lattice_utils import (
     _incremental_cube_points,
     _integer_grid_chunks,
@@ -77,6 +83,10 @@ class TestRasterize(unittest.TestCase):
         self.assertTrue(np.array_equal(points, expected_points), "Rasterize did not produce expected points for identity matrix.")
 
 class TestSampleCube(unittest.TestCase):
+    def test_modern_boundary_default_matches_half_open_manuscript_cube(self):
+        points = sample_unit_cube(np.eye(2))
+        np.testing.assert_array_equal(points, np.array([[0.0, 0.0]]))
+
     def test_samplecube_identity(self):
         """
         Test samplecube with an identity matrix as the lattice basis.
@@ -155,6 +165,53 @@ class TestSampleCube(unittest.TestCase):
     def test_samplecube_rejects_invalid_memory_budget(self):
         with self.assertRaises(ValueError):
             samplecube(np.eye(2), maxmemMB=0)
+
+    def test_iterated_batches_reconstruct_points_and_addresses(self):
+        basis = np.array([[0.48, 0.13], [-0.07, 0.52]])
+        shift = np.array([0.11, 0.23])
+        diagnostics = CubeTraversalDiagnostics()
+        batches = list(
+            iter_unit_cube_batches(
+                basis,
+                shift,
+                eps=1.0e-10,
+                max_memory_mib=0.001,
+                diagnostics=diagnostics,
+            )
+        )
+        points = np.unique(
+            np.concatenate([batch.points for batch in batches]), axis=0
+        )
+        expected = sample_unit_cube(
+            basis, shift, eps=1.0e-10, max_memory_mib=0.001
+        )
+        np.testing.assert_allclose(points, expected, atol=0.0, rtol=0.0)
+        for batch in batches:
+            np.testing.assert_allclose(
+                batch.points,
+                batch.addresses @ basis.T + shift,
+                atol=1.0e-15,
+                rtol=0.0,
+            )
+        self.assertEqual(diagnostics.emitted_point_count, len(expected))
+        self.assertGreater(diagnostics.address_box_count, 0)
+
+    def test_public_address_bounds_include_the_declared_tolerance_box(self):
+        basis = np.array([[0.55, 0.10], [-0.05, 0.60]])
+        shift = np.array([0.13, -0.07])
+        lower, upper = unit_cube_address_bounds(
+            basis,
+            shift,
+            eps=1.0e-3,
+            upper_tolerance_direction=1,
+        )
+        inverse = np.linalg.inv(basis)
+        corners = np.array(
+            np.meshgrid(*([[-1.0e-3, 1.001]] * 2), indexing="ij")
+        ).reshape(2, -1).T
+        preimage = (corners - shift) @ inverse.T
+        np.testing.assert_array_equal(lower, np.floor(preimage.min(axis=0)))
+        np.testing.assert_array_equal(upper, np.ceil(preimage.max(axis=0)))
 
 
 

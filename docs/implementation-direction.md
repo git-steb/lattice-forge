@@ -129,18 +129,22 @@ Over the next few weeks, keep the work small and defensible:
 
 The public bounded-region sampler follows the same division of labour.
 `samplecube(..., maxmemMB=...)` traverses its certified integer address box in
-bounded chunks and returns the same explicit NumPy point matrix as before. For
-large address boxes it recovers the central implementation principle of the
-original MATLAB `lattice/rasterize.m`: extend integer addresses dimension by
-dimension and discard a prefix only when a conservative enclosure proves that
-no completion can enter the requested region. The final point-in-region test
-remains exact up to the caller's declared tolerance.
+bounded chunks and returns the same explicit NumPy point matrix as before.
+`iter_unit_cube_batches(...)` exposes the same operation as a pull-based stream
+of aligned integer addresses and physical points, so a caller may store, draw,
+or evaluate one batch at a time. For large address boxes both surfaces recover
+the central implementation principle of the original MATLAB
+`lattice/rasterize.m`: extend integer addresses dimension by dimension and
+discard a prefix only when a conservative enclosure proves that no completion
+can enter the requested region. The final point-in-region test remains exact
+up to the caller's declared tolerance.
 
 This is an implementation recovery, not a new construction or optimization
 claim. It does not expose a private selection policy or make Python the owner of
 a new theorem. The internal typed reference may remain lazy; Python materializes
-only the final public result expected by existing callers. A later native kernel
-can replace the traversal behind this behavior-preserving boundary after golden
+only the final public result expected by existing `samplecube` callers, while
+the iterator leaves materialization to its consumer. A later native kernel can
+replace the traversal behind this behavior-preserving boundary after golden
 cross-language checks exist.
 
 ## Non-Goals
