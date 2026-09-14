@@ -6,6 +6,12 @@ bases, dilation matrices, nested point sets, Voronoi geometry, and
 space-filling diagnostics for Gaussian-process emulation and related statistical
 design problems.
 
+It is being prepared as the bounded software companion to Steven Bergner and
+Derek Bingham's manuscript *Low-rate rotational lattice refinement for
+sequential computer experiments*. The manuscript is under preparation for
+submission; this repository does not claim the larger unpublished research
+programme.
+
 The current code is intentionally close to the design-construction layer: it
 generates lattice point sets in bounded regions, studies refinement by integer
 dilation, and exposes small visual and testable surfaces for checking how a
@@ -48,6 +54,12 @@ be made explicit enough to inspect, test, and eventually optimize.
 This repository is the companion code surface for that design work. The current
 interface is research-facing and may change as the design-construction layer is
 tightened.
+
+The construction determines which refinements are admissible. A statistical
+criterion may rank those candidates for a particular analysis, but that ranking
+does not become a construction theorem or a universal performance claim. The
+full inclusion and exclusion boundary is recorded in
+[`docs/public-release-boundary.md`](docs/public-release-boundary.md).
 
 ## Install
 
@@ -128,3 +140,20 @@ statistical criterion.
 
 Active research code. Interfaces may change while the design-construction
 story is being tightened.
+
+Before preparing a release, run:
+
+```bash
+python tools/check_release.py
+python -m unittest discover tests
+```
+
+## Licence, provenance and citation
+
+Original LatticeForge code and documentation are available under the
+BSD-3-Clause licence in [`LICENSE`](LICENSE). Vendored Eigen headers retain
+their own terms; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+The implementation lineage and the boundary around earlier collaborator code
+are recorded in [`PROVENANCE.md`](PROVENANCE.md). Citation metadata is provided
+in [`CITATION.cff`](CITATION.cff).
