@@ -6,19 +6,27 @@ inventorship, copyright ownership or patent rights.
 
 ## Project lineage
 
+The published lineage of the rotational lattice construction is:
+
+- S. Bergner, D. Van De Ville, T. Blu and T. Möller, "On sampling lattices
+  with similarity scaling relationships", SampTA 2009,
+  <https://bigwww.epfl.ch/publications/bergner0901.html>;
+- S. Bergner, *Making Choices in Multi-Dimensional Parameter Spaces*, PhD
+  thesis, Simon Fraser University, 2011, Chapter 3,
+  <https://summit.sfu.ca/item/12089>;
+- K. Heitmann et al., "The Mira–Titan Universe: Precision Predictions for Dark
+  Energy Surveys", Astrophys. J. 820 (2016) 108, Section 3, which used the
+  nested lattice design for an emulator campaign.
+
 LatticeForge is the maintained Python/C++ companion to Steven Bergner's earlier
-RotGrid MATLAB/Octave implementation:
+RotGrid MATLAB/Octave implementation. That legacy implementation is not
+publicly released; it is cited here as engineering provenance only. From 2012
+to 2017 its bounded-cube enumeration developed dimension-incremental address
+extension, conservative pruning and memory-aware traversal.
 
-<https://github.com/git-steb/rotgrid-matlab>
-
-The legacy repository records the construction and use of rotational lattice
-designs from 2008 onward. In particular, `lattice/samplecube.m` and
-`lattice/rasterize.m` developed bounded-cube enumeration, dimension-incremental
-address extension, conservative pruning and memory-aware traversal between
-2012 and 2017.
-
-`LatticeForge/bounded_sampling.py` is a modern, tested recovery of that public
-enumeration principle. Its address-preserving iterator changes how results may
+`LatticeForge/bounded_sampling.py` is a modern, tested reimplementation of that
+enumeration principle, which is standard bounded lattice-point enumeration
+rather than a new result. Its address-preserving iterator changes how results may
 be consumed; it does not define a new lattice, rotation, refinement path or
 statistical selection rule.
 
