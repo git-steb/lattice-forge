@@ -2,6 +2,7 @@ include README.md
 include LICENSE
 include THIRD_PARTY_NOTICES.md
 include PROVENANCE.md
+include CHANGELOG.md
 include CITATION.cff
 include docs/public-release-boundary.md
 recursive-include LatticeForge/eigen COPYING.*

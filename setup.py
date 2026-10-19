@@ -22,7 +22,7 @@ ext_modules = [
 
 setup(
     name='LatticeForge',
-    version='0.1.0',
+    version='0.1.1',
     author='Steven Bergner',
     author_email='git-steb@users.noreply.github.com',
     description='Lattice-based design construction for computer experiments and Gaussian-process emulation',

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -14,6 +15,7 @@ REQUIRED = (
     "THIRD_PARTY_NOTICES.md",
     "PROVENANCE.md",
     "CITATION.cff",
+    "CHANGELOG.md",
     "LatticeForge/eigen/COPYING.README",
     "LatticeForge/eigen/COPYING.MPL2",
     "LatticeForge/eigen/COPYING.BSD",
@@ -60,6 +62,22 @@ def main() -> int:
     ):
         if expected not in (ROOT / relative).read_text(encoding="utf-8"):
             errors.append(f"{relative} is missing licence declaration: {expected}")
+
+    setup_version = re.search(r"version='([^']+)'", setup_text)
+    citation_version = re.search(
+        r"^version:\s*(\S+)", (ROOT / "CITATION.cff").read_text(encoding="utf-8"), re.M
+    )
+    changelog_text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    if not setup_version or not citation_version:
+        errors.append("could not read the version from setup.py or CITATION.cff")
+    else:
+        if setup_version.group(1) != citation_version.group(1):
+            errors.append(
+                f"version mismatch: setup.py {setup_version.group(1)}, "
+                f"CITATION.cff {citation_version.group(1)}"
+            )
+        if f"## {setup_version.group(1)}" not in changelog_text:
+            errors.append(f"CHANGELOG.md has no entry for {setup_version.group(1)}")
 
     manifest_text = (ROOT / "MANIFEST.in").read_text(encoding="utf-8")
     for expected in (
