@@ -47,9 +47,18 @@ def main() -> int:
             errors.append(f"tracked build artifact: {relative}")
 
     setup_text = (ROOT / "setup.py").read_text(encoding="utf-8")
-    for expected in ("license='BSD-3-Clause'",):
+    for expected in ("license='MIT'",):
         if expected not in setup_text:
             errors.append(f"setup.py is missing release metadata: {expected}")
+
+    for relative, expected in (
+        ("LICENSE", "MIT License"),
+        ("CITATION.cff", "license: MIT"),
+        ("README.md", "MIT licence in [`LICENSE`](LICENSE)"),
+        ("THIRD_PARTY_NOTICES.md", "The MIT"),
+    ):
+        if expected not in (ROOT / relative).read_text(encoding="utf-8"):
+            errors.append(f"{relative} is missing licence declaration: {expected}")
 
     manifest_text = (ROOT / "MANIFEST.in").read_text(encoding="utf-8")
     for expected in (

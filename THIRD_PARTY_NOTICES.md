@@ -1,6 +1,6 @@
 # Third-party notices
 
-LatticeForge contains and depends on third-party software. The BSD-3-Clause
+LatticeForge contains and depends on third-party software. The MIT
 licence in `LICENSE` applies to the original LatticeForge code and
 documentation; it does not replace the licences of third-party components.
 

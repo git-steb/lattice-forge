@@ -151,7 +151,7 @@ python -m unittest discover tests
 ## Licence, provenance and citation
 
 Original LatticeForge code and documentation are available under the
-BSD-3-Clause licence in [`LICENSE`](LICENSE). Vendored Eigen headers retain
+MIT licence in [`LICENSE`](LICENSE). Vendored Eigen headers retain
 their own terms; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 The implementation lineage and the boundary around earlier collaborator code

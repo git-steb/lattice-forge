@@ -10,7 +10,7 @@ authors:
     given-names: Steven
 repository-code: https://github.com/git-steb/lattice-forge
 url: https://git-steb.github.io/lattice-forge/
-license: BSD-3-Clause
+license: MIT
 preferred-citation:
   type: article
   title: Low-rate rotational lattice refinement for sequential computer experiments

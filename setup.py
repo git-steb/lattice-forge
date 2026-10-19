@@ -26,7 +26,7 @@ setup(
     author='Steven Bergner',
     author_email='git-steb@users.noreply.github.com',
     description='Lattice-based design construction for computer experiments and Gaussian-process emulation',
-    license='BSD-3-Clause',
+    license='MIT',
     license_files=(
         'LICENSE',
         'THIRD_PARTY_NOTICES.md',
