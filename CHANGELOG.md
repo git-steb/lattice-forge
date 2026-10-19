@@ -4,7 +4,7 @@ Versions mark planned steps, not every change. A minor version (0.x) is
 reserved for a step on the project roadmap. A patch version (0.1.x) records a
 correction that changes what existing callers receive.
 
-## 0.1.1 (unreleased)
+## 0.1.1 (2026-10-18)
 
 ### Fixed
 

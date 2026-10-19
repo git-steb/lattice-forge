@@ -1,7 +1,6 @@
 cff-version: 1.2.0
 message: >-
-  Please cite the software and the accompanying manuscript when using
-  LatticeForge in published work.
+  If you use LatticeForge in published work, please cite the software.
 title: LatticeForge
 type: software
 version: 0.1.1
@@ -11,13 +10,3 @@ authors:
 repository-code: https://github.com/git-steb/lattice-forge
 url: https://git-steb.github.io/lattice-forge/
 license: MIT
-preferred-citation:
-  type: article
-  title: Low-rate rotational lattice refinement for sequential computer experiments
-  authors:
-    - family-names: Bergner
-      given-names: Steven
-    - family-names: Bingham
-      given-names: Derek
-  year: 2026
-  notes: Manuscript under preparation for submission

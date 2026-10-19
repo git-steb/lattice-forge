@@ -6,11 +6,10 @@ bases, dilation matrices, nested point sets, Voronoi geometry, and
 space-filling diagnostics for Gaussian-process emulation and related statistical
 design problems.
 
-It is being prepared as the bounded software companion to Steven Bergner and
-Derek Bingham's manuscript *Low-rate rotational lattice refinement for
-sequential computer experiments*. The manuscript is under preparation for
-submission; this repository does not claim the larger unpublished research
-programme.
+It is being prepared as the bounded software companion to the manuscript
+*Low-rate rotational lattice refinement for sequential computer experiments*,
+which is under preparation for submission; this repository does not claim the
+larger unpublished research programme.
 
 The current code is intentionally close to the design-construction layer: it
 generates lattice point sets in bounded regions, studies refinement by integer
