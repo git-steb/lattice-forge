@@ -19,6 +19,7 @@ REQUIRED = (
     "LatticeForge/eigen/COPYING.BSD",
     "LatticeForge/eigen/COPYING.MINPACK",
     "LatticeForge/eigen/COPYING.APACHE",
+    "LatticeForge/eigen/COPYING.LGPL",
 )
 
 FORBIDDEN_TRACKED_SUFFIXES = (".so", ".dylib", ".dll", ".whl", ".pyc")
