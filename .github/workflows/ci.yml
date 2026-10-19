@@ -1,0 +1,61 @@
+# Build the source distribution and a wheel, and run the tests against both.
+# This workflow only builds and tests; it publishes nothing and uses no secrets.
+# Windows is not in the matrix: the extension's compile flags in setup.py are
+# GCC/Clang-specific.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build
+
+      - name: Release check
+        run: python tools/check_release.py
+
+      # `python -m build` builds the source distribution first and then builds
+      # the wheel from that source distribution.
+      - name: Build source distribution and wheel
+        run: python -m build --outdir dist
+
+      # Tests run from a neutral directory so that the installed package, and
+      # not the checkout, is what gets imported.
+      - name: Test the source distribution
+        run: |
+          mkdir "$RUNNER_TEMP/sdist"
+          tar -xzf dist/*.tar.gz -C "$RUNNER_TEMP/sdist" --strip-components=1
+          python -m pip install "$RUNNER_TEMP/sdist"
+          cd "$RUNNER_TEMP"
+          python -m unittest discover -s "$RUNNER_TEMP/sdist/tests"
+
+      - name: Test the wheel in a fresh environment
+        run: |
+          python -m venv "$RUNNER_TEMP/wheel-env"
+          "$RUNNER_TEMP/wheel-env/bin/python" -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/wheel-env/bin/python" -m unittest discover -s "$RUNNER_TEMP/sdist/tests"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/*
